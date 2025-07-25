@@ -13,7 +13,8 @@
     <form id="talentProfileForm" class="space-y-4">
       <div class="flex flex-col items-center">
         <label class="font-medium mb-2">Upload Profile Picture</label>
-        <input type="file" id="profilePic" accept="image/*" class="border rounded p-2 w-32" required>
+        <input type="file" id="profilePic" accept="image/*" class="mb-4" required>
+        <img id="previewImg" src="#" alt="Preview" class="hidden w-24 h-24 rounded-full object-cover border shadow">
       </div>
 
       <input type="text" id="name" placeholder="Full Name" required class="w-full p-2 border rounded">
@@ -41,6 +42,15 @@
   <script src="firebase.js"></script>
 
   <script>
+    document.getElementById('profilePic').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (file) {
+        const preview = document.getElementById('previewImg');
+        preview.src = URL.createObjectURL(file);
+        preview.classList.remove('hidden');
+      }
+    });
+
     document.getElementById('talentProfileForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const user = auth.currentUser;
