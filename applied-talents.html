@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Applied Talents – HARAKA CONNECT</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <header class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold text-indigo-600">Applicants to Your Jobs</h1>
+    <button onclick="logout()" class="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600">Logout</button>
+  </header>
+
+  <main class="p-6 max-w-4xl mx-auto">
+    <div id="applicantsList" class="space-y-4"></div>
+  </main>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="firebase.js"></script>
+
+  <script>
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) return window.location.href = 'login.html';
+      const jobsSnapshot = await db.collection('jobs').where('postedBy', '==', user.uid).get();
+      const applicantsList = document.getElementById('applicantsList');
+      applicantsList.innerHTML = '';
+
+      for (const doc of jobsSnapshot.docs) {
+        const job = doc.data();
+        for (const applicantId of job.applicants || []) {
+          const userDoc = await db.collection('users').doc(applicantId).get();
+          const talent = userDoc.data();
+          applicantsList.innerHTML += `
+            <div class="bg-white p-4 rounded shadow">
+              <div class="flex items-center gap-4">
+                <img src="${talent.profilePic || 'default-avatar.jpg'}" class="w-16 h-16 rounded-full object-cover border" alt="Avatar" />
+                <div>
+                  <h3 class="text-lg font-semibold">${talent.name}</h3>
+                  <p class="text-gray-600 text-sm">${talent.skill || 'No skill provided'}</p>
+                  <p class="text-sm text-gray-500">${talent.bio || 'No bio available.'}</p>
+                  <div class="mt-2 flex gap-3">
+                    <a href="chat.html?to=${applicantId}" class="text-blue-600 hover:underline">Chat</a>
+                    <button class="text-green-600 hover:underline">Shortlist</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+    });
+
+    function logout() {
+      auth.signOut().then(() => window.location.href = 'login.html');
+    }
+  </script>
+
+</body>
+</html>
