@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Find Jobs – HARAKA CONNECT</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <header class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold text-indigo-600">🎯 HARAKA Job Feed</h1>
+    <a href="login.html" class="text-blue-600 hover:underline">Login</a>
+  </header>
+
+  <main class="p-6">
+    <!-- Filter Section -->
+    <section class="mb-6 bg-white p-4 rounded shadow">
+      <h2 class="text-lg font-semibold mb-4">🔍 Filter Jobs</h2>
+      <form id="filterForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input type="text" id="filterLocation" placeholder="Location" class="p-2 border rounded" />
+        <input type="text" id="filterCategory" placeholder="Category" class="p-2 border rounded" />
+        <input type="number" id="filterBudget" placeholder="Max Budget (UGX)" class="p-2 border rounded" />
+        <button type="submit" class="md:col-span-3 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Apply Filters</button>
+      </form>
+    </section>
+
+    <!-- Job List -->
+    <section class="bg-white p-4 rounded shadow">
+      <h2 class="text-lg font-semibold mb-4">📋 Available Jobs</h2>
+      <div id="jobFeed" class="space-y-4 text-gray-700">
+        <p>Loading jobs...</p>
+      </div>
+    </section>
+
+    <!-- Success Modal (hidden by default) -->
+    <div id="successScreen" class="hidden fixed inset-0 bg-green-50 flex items-center justify-center z-50">
+      <div class="bg-white shadow-lg rounded-lg p-8 max-w-md text-center">
+        <h1 class="text-2xl font-bold text-green-700 mb-4">🎉 Application Submitted!</h1>
+        <p class="text-gray-700 mb-6">Thank you for applying. The client will review your profile and may contact you if you're shortlisted.</p>
+        <button onclick="closeSuccess()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Back to Jobs</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="firebase.js"></script>
+
+  <script>
+    const jobFeed = document.getElementById('jobFeed');
+    const form = document.getElementById('filterForm');
+    const successScreen = document.getElementById('successScreen');
+
+    async function loadJobs(filters = {}) {
+      let query = db.collection('jobs').where('status', '==', 'open');
+      if (filters.location) query = query.where('location', '==', filters.location);
+
+      const snapshot = await query.get();
+      jobFeed.innerHTML = '';
+      snapshot.forEach(doc => {
+        const job = doc.data();
+        const budgetMatch = !filters.budget || parseInt(job.budget) <= parseInt(filters.budget);
+        const categoryMatch = !filters.category || job.category.toLowerCase().includes(filters.category.toLowerCase());
+
+        if (budgetMatch && categoryMatch) {
+          jobFeed.innerHTML += `
+            <div class="border rounded p-4 bg-gray-50">
+              <h3 class="text-lg font-semibold text-indigo-600">${job.title}</h3>
+              <p>${job.description}</p>
+              <p class="text-sm text-gray-500 mt-1">📍 ${job.location} | 💰 UGX ${job.budget} | 📅 ${job.deadline}</p>
+              <button onclick="applyToJob('${doc.id}')" class="mt-2 px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                Apply Now
+              </button>
+            </div>
+          `;
+        }
+      });
+      if (jobFeed.innerHTML === '') {
+        jobFeed.innerHTML = `<p class="text-gray-500">No jobs found for the selected filters.</p>`;
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const filters = {
+        location: document.getElementById('filterLocation').value.trim(),
+        category: document.getElementById('filterCategory').value.trim(),
+        budget: document.getElementById('filterBudget').value.trim(),
+      };
+      loadJobs(filters);
+    });
+
+    async function applyToJob(jobId) {
+      const user = await auth.currentUser;
+      if (!user) return window.location.href = 'login.html';
+
+      const userDoc = await db.collection('users').doc(user.uid).get();
+      const userData = userDoc.data();
+      const jobRef = db.collection('jobs').doc(jobId);
+      const jobDoc = await jobRef.get();
+      const jobData = jobDoc.data();
+
+      await jobRef.update({
+        applicants: firebase.firestore.FieldValue.arrayUnion({
+          uid: user.uid,
+          name: userData.name || "Unknown",
+          skill: userData.skill || "",
+          profilePic: userData.profilePic || "",
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      await db.collection('notifications').add({
+        to: jobData.postedBy,
+        type: 'application',
+        message: `${userData.name || 'A talent'} applied to your job: ${jobData.title}`,
+        createdAt: new Date().toISOString(),
+        read: false
+      });
+
+      successScreen.classList.remove('hidden');
+    }
+
+    function closeSuccess() {
+      successScreen.classList.add('hidden');
+      loadJobs();
+    }
+
+    loadJobs(); // Initial Load
+  </script>
+</body>
+</html>
