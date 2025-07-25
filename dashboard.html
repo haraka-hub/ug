@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard – HARAKA CONNECT</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
@@ -39,14 +38,6 @@
         <div id="jobList" class="space-y-4 text-gray-700"></div>
       </div>
     </section>
-
-    <!-- Job Feed for Talents -->
-    <section id="jobFeed" class="hidden">
-      <div class="bg-white p-6 rounded shadow-md">
-        <h3 class="text-xl font-semibold mb-4">Available Jobs</h3>
-        <div id="availableJobs" class="space-y-4 text-gray-700"></div>
-      </div>
-    </section>
   </main>
 
   <!-- Firebase SDKs -->
@@ -72,7 +63,7 @@
           <p class="text-sm text-gray-500 mt-1">${data.email}</p>
           <div class="mt-4 text-left">
             <h4 class="font-semibold mb-2">Details</h4>
-            <p><strong>Phone:</strong> ${data.phone || 'N/A'}</p>
+            <p><strong>Phone:</strong> Hidden</p>
             <p><strong>About:</strong> ${data.bio || data.hiringPreferences || 'No description added.'}</p>
           </div>
         </div>
@@ -81,9 +72,6 @@
       if (data.role === 'client') {
         document.getElementById('jobSection').classList.remove('hidden');
         loadJobs(user.uid);
-      } else if (data.role === 'talent') {
-        document.getElementById('jobFeed').classList.remove('hidden');
-        loadAvailableJobs();
       }
     });
 
@@ -123,44 +111,15 @@
             <p class="text-sm text-gray-500 mt-1">Location: ${job.location} | Budget: UGX ${job.budget}</p>
             <p class="text-sm text-gray-500">Deadline: ${job.deadline}</p>
             <p class="text-sm text-green-600 mt-2">Applicants: ${job.applicants.length}</p>
+            <button class="mt-2 px-4 py-1 bg-indigo-500 text-white rounded" onclick="openChat('${doc.id}')">Chat</button>
           </div>
         `;
       });
     }
 
-    async function loadAvailableJobs() {
-      const snapshot = await db.collection('jobs').where('status', '==', 'open').get();
-      const container = document.getElementById('availableJobs');
-      container.innerHTML = '';
-      snapshot.forEach(doc => {
-        const job = doc.data();
-        container.innerHTML += `
-          <div class="border rounded p-4 bg-white">
-            <h4 class="text-lg font-semibold text-blue-700">${job.title}</h4>
-            <p class="text-gray-700">${job.description}</p>
-            <p class="text-sm text-gray-500">Category: ${job.category} | Budget: UGX ${job.budget}</p>
-            <p class="text-sm text-gray-500">Location: ${job.location} | Deadline: ${job.deadline}</p>
-            <button onclick="applyToJob('${doc.id}')" class="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Apply Now</button>
-          </div>
-        `;
-      });
-    }
-
-    async function applyToJob(jobId) {
-      const user = auth.currentUser;
-      const userDoc = await db.collection('users').doc(user.uid).get();
-      const talentInfo = userDoc.data();
-      await db.collection('jobs').doc(jobId).update({
-        applicants: firebase.firestore.FieldValue.arrayUnion({
-          uid: user.uid,
-          name: talentInfo.name,
-          email: talentInfo.email,
-          phone: talentInfo.phone || '',
-          region: talentInfo.region || '',
-          skills: talentInfo.skills || []
-        })
-      });
-      alert('Application sent!');
+    function openChat(jobId) {
+      alert(`Opening chat for Job ID: ${jobId}. Contact info is protected.`);
+      // Real-time chat window implementation would go here
     }
 
     function logout() {
