@@ -59,24 +59,45 @@
   <script src="firebase.js"></script>
 
   <script>
-  auth.onAuthStateChanged(async (user) => {
+auth.onAuthStateChanged(async (user) => {
   if (!user) return window.location.href = 'login.html';
 
   const doc = await db.collection('users').doc(user.uid).get();
   const data = doc.data();
 
-  if (!data || !data.role || !data.name) {
-    // Redirect to appropriate profile setup if missing name or essential info
+  if (!data || !data.role || !data.name || !data.profilePic) {
+    // Redirect user to their profile setup if essential fields are missing
     if (data?.role === 'client') {
       return window.location.href = 'client-profile.html';
-    } else {
+    } else if (data?.role === 'talent') {
       return window.location.href = 'talent-profile.html';
+    } else {
+      return window.location.href = 'register.html'; // fallback
     }
   }
 
-  // Continue rendering dashboard if profile is completed
+  // Load the rest of the dashboard if profile is complete
   document.getElementById('userRole').innerText = data.role.charAt(0).toUpperCase() + data.role.slice(1);
-  ...
+
+  const section = document.getElementById('profileSection');
+  section.innerHTML = `
+    <div class="text-center">
+      <img src="${data.logo || data.profilePic}" class="w-24 h-24 mx-auto rounded-full object-cover border mb-4" alt="Profile">
+      <h3 class="text-xl font-bold">${data.name || data.companyName}</h3>
+      <p class="text-gray-600">${data.region}</p>
+      <p class="text-sm text-gray-500 mt-1">${data.email}</p>
+      <div class="mt-4 text-left">
+        <h4 class="font-semibold mb-2">Details</h4>
+        <p><strong>Phone:</strong> Hidden</p>
+        <p><strong>About:</strong> ${data.bio || data.hiringPreferences || 'No description added.'}</p>
+      </div>
+    </div>
+  `;
+
+  if (data.role === 'client') {
+    document.getElementById('jobSection').classList.remove('hidden');
+    loadJobs(user.uid);
+  }
 });
 
       const section = document.getElementById('profileSection');
