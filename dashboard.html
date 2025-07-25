@@ -59,12 +59,25 @@
   <script src="firebase.js"></script>
 
   <script>
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) return window.location.href = 'login.html';
-      const doc = await db.collection('users').doc(user.uid).get();
-      const data = doc.data();
+  auth.onAuthStateChanged(async (user) => {
+  if (!user) return window.location.href = 'login.html';
 
-      document.getElementById('userRole').innerText = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+  const doc = await db.collection('users').doc(user.uid).get();
+  const data = doc.data();
+
+  if (!data || !data.role || !data.name) {
+    // Redirect to appropriate profile setup if missing name or essential info
+    if (data?.role === 'client') {
+      return window.location.href = 'client-profile.html';
+    } else {
+      return window.location.href = 'talent-profile.html';
+    }
+  }
+
+  // Continue rendering dashboard if profile is completed
+  document.getElementById('userRole').innerText = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+  ...
+});
 
       const section = document.getElementById('profileSection');
       section.innerHTML = `
