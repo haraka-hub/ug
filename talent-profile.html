@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Talent Profile Setup – HARAKA CONNECT</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+  <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-xl">
+    <h2 class="text-2xl font-bold text-center mb-6">Talent Profile Setup</h2>
+
+    <form id="talentProfileForm" class="space-y-4">
+      <div class="flex flex-col items-center">
+        <label class="font-medium mb-2">Upload Profile Picture</label>
+        <input type="file" id="profilePic" accept="image/*" class="border rounded p-2 w-32" required>
+      </div>
+
+      <input type="text" id="name" placeholder="Full Name" required class="w-full p-2 border rounded">
+      <input type="text" id="skills" placeholder="Skills (e.g. Photographer)" required class="w-full p-2 border rounded">
+      <input type="text" id="location" placeholder="Location" required class="w-full p-2 border rounded">
+      <input type="number" id="rate" placeholder="Rate per hour (UGX)" required class="w-full p-2 border rounded">
+      <input type="email" id="emailContact" placeholder="Contact Email" required class="w-full p-2 border rounded">
+      <input type="tel" id="phone" placeholder="Phone Number" class="w-full p-2 border rounded">
+
+      <div class="space-y-2">
+        <label class="block font-medium">Social Links (optional)</label>
+        <input type="url" id="instagram" placeholder="Instagram URL" class="w-full p-2 border rounded">
+        <input type="url" id="youtube" placeholder="YouTube URL" class="w-full p-2 border rounded">
+      </div>
+
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Submit Profile</button>
+    </form>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script src="firebase.js"></script>
+
+  <script>
+    document.getElementById('talentProfileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const user = auth.currentUser;
+      if (!user) return alert('Please log in first.');
+
+      const uid = user.uid;
+      const profilePic = document.getElementById('profilePic').files[0];
+      let profilePicURL = '';
+
+      try {
+        if (profilePic) {
+          const ref = storage.ref(`talent_profiles/${uid}`);
+          await ref.put(profilePic);
+          profilePicURL = await ref.getDownloadURL();
+        }
+
+        await db.collection('users').doc(uid).update({
+          name: document.getElementById('name').value,
+          skills: document.getElementById('skills').value,
+          location: document.getElementById('location').value,
+          rate: document.getElementById('rate').value,
+          contactEmail: document.getElementById('emailContact').value,
+          phone: document.getElementById('phone').value || null,
+          instagram: document.getElementById('instagram').value || '',
+          youtube: document.getElementById('youtube').value || '',
+          profilePic: profilePicURL,
+          profileComplete: true
+        });
+
+        alert('Profile successfully completed!');
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+  </script>
+
+</body>
+</html>
