@@ -1,1 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat – HARAKA CONNECT</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <header class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold text-indigo-600">Private Chat</h1>
+    <button onclick="logout()" class="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600">Logout</button>
+  </header>
+
+  <main class="p-6 max-w-3xl mx-auto">
+    <div class="bg-white p-4 rounded shadow h-[500px] overflow-y-auto" id="chatBox">
+      <!-- Messages will be appended here -->
+    </div>
+
+    <form id="chatForm" class="flex mt-4 gap-2">
+      <input type="text" id="messageInput" placeholder="Type a message..." class="flex-grow border p-3 rounded" required />
+      <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700">Send</button>
+    </form>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="firebase.js"></script>
+
+  <script>
+    let currentUser;
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatPartnerId = urlParams.get('to');
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) return location.href = 'login.html';
+      currentUser = user;
+      listenForMessages();
+    });
+
+    document.getElementById('chatForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = document.getElementById('messageInput').value.trim();
+      if (!message) return;
+      await db.collection('messages').add({
+        from: currentUser.uid,
+        to: chatPartnerId,
+        text: message,
+        timestamp: new Date().toISOString()
+      });
+      document.getElementById('messageInput').value = '';
+    });
+
+    function listenForMessages() {
+      db.collection('messages')
+        .where('from', 'in', [currentUser.uid, chatPartnerId])
+        .where('to', 'in', [currentUser.uid, chatPartnerId])
+        .orderBy('timestamp')
+        .onSnapshot(snapshot => {
+          const chatBox = document.getElementById('chatBox');
+          chatBox.innerHTML = '';
+          snapshot.forEach(doc => {
+            const msg = doc.data();
+            const isSender = msg.from === currentUser.uid;
+            const bubble = document.createElement('div');
+            bubble.className = `p-2 my-2 rounded max-w-[70%] ${isSender ? 'ml-auto bg-blue-200 text-right' : 'mr-auto bg-gray-200 text-left'}`;
+            bubble.innerText = msg.text;
+            chatBox.appendChild(bubble);
+          });
+          chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    }
+
+    function logout() {
+      auth.signOut().then(() => location.href = 'login.html');
+    }
+  </script>
+
+</body>
+</html>
 
