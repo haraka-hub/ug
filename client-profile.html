@@ -1,1 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Client Profile Setup – HARAKA CONNECT</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+  <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-xl">
+    <h2 class="text-2xl font-bold text-center mb-6">Client Profile Setup</h2>
+
+    <form id="clientProfileForm" class="space-y-4">
+      <div class="flex flex-col items-center">
+        <label class="font-medium mb-2">Upload Company Logo</label>
+        <input type="file" id="companyLogo" accept="image/*" class="mb-4" required>
+        <img id="logoPreview" src="#" alt="Logo Preview" class="hidden w-24 h-24 rounded-full object-cover border shadow">
+      </div>
+
+      <input type="text" id="companyName" placeholder="Company Name" required class="w-full p-2 border rounded">
+      <input type="text" id="contactName" placeholder="Contact Person's Name" required class="w-full p-2 border rounded">
+      <input type="text" id="region" placeholder="Region / City" required class="w-full p-2 border rounded">
+      <input type="email" id="email" placeholder="Business Email" required class="w-full p-2 border rounded">
+      <input type="tel" id="phone" placeholder="Phone Number" class="w-full p-2 border rounded">
+
+      <textarea id="hiringPreferences" placeholder="Describe your hiring preferences (e.g. preferred skills, availability, contract types)..." rows="4" class="w-full p-2 border rounded"></textarea>
+
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Submit Profile</button>
+    </form>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script src="firebase.js"></script>
+
+  <script>
+    document.getElementById('companyLogo').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (file) {
+        const preview = document.getElementById('logoPreview');
+        preview.src = URL.createObjectURL(file);
+        preview.classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('clientProfileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const user = auth.currentUser;
+      if (!user) return alert('Please log in first.');
+
+      const uid = user.uid;
+      const logo = document.getElementById('companyLogo').files[0];
+      let logoURL = '';
+
+      try {
+        if (logo) {
+          const ref = storage.ref(`client_logos/${uid}`);
+          await ref.put(logo);
+          logoURL = await ref.getDownloadURL();
+        }
+
+        await db.collection('users').doc(uid).update({
+          companyName: document.getElementById('companyName').value,
+          contactName: document.getElementById('contactName').value,
+          region: document.getElementById('region').value,
+          email: document.getElementById('email').value,
+          phone: document.getElementById('phone').value || '',
+          hiringPreferences: document.getElementById('hiringPreferences').value,
+          logo: logoURL,
+          profileComplete: true,
+          role: 'client'
+        });
+
+        alert('Client profile saved successfully!');
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+  </script>
+
+</body>
+</html>
 
