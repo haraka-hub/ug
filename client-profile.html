@@ -12,9 +12,11 @@
 
     <form id="clientProfileForm" class="space-y-4">
       <div class="flex flex-col items-center">
-        <label class="font-medium mb-2">Upload Company Logo</label>
-        <input type="file" id="companyLogo" accept="image/*" class="mb-4" required>
-        <img id="logoPreview" src="#" alt="Logo Preview" class="hidden w-24 h-24 rounded-full object-cover border shadow">
+       <label class="block text-sm font-medium text-gray-700">Profile Picture</label>
+<input type="file" id="mediaInput" accept="image/*" class="mt-1 mb-2" />
+<button onclick="uploadToVercel()" class="bg-indigo-600 text-white px-3 py-1 rounded">Upload Image</button>
+<p id="uploadStatus" class="text-sm mt-2 text-gray-600"></p>
+
       </div>
 
       <input type="text" id="companyName" placeholder="Company Name" required class="w-full p-2 border rounded">
@@ -80,7 +82,38 @@
         alert('Error: ' + err.message);
       }
     });
-  </script>
+
+  async function uploadToVercel() {
+    const fileInput = document.getElementById("mediaInput");
+    const file = fileInput.files[0];
+    if (!file) return alert("Select a file first");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("https://haraka.blob.vercel-storage.com/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await res.json();
+    if (result.url) {
+      document.getElementById("uploadStatus").innerText = "Uploaded ✅";
+      console.log("Blob URL:", result.url);
+
+      // OPTIONAL: Save it to Firestore or a global variable
+      // Example: saveProfileImage(result.url);
+
+    } else {
+      alert("Upload failed");
+      console.error(result);
+    }
+  }
+</script>
+
+
+
+
 
 </body>
 </html>
