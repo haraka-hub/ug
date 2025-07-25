@@ -14,10 +14,30 @@
 
   <main class="p-6">
     <h2 class="text-2xl font-semibold mb-4">Welcome, <span id="userRole"></span></h2>
-    <div id="profileSection" class="bg-white p-4 rounded shadow-md">
+    <div id="profileSection" class="bg-white p-4 rounded shadow-md mb-8">
       <!-- Profile content will be injected here -->
       <p class="text-gray-600">Loading your profile...</p>
     </div>
+
+    <!-- Job Posting Section for Clients Only -->
+    <section id="jobSection" class="hidden">
+      <div class="bg-white p-6 rounded shadow-md mb-8">
+        <h3 class="text-xl font-semibold mb-4">Post a New Job</h3>
+        <form id="jobForm" class="space-y-4">
+          <input type="text" id="title" placeholder="Job Title" class="w-full p-3 border rounded" required />
+          <textarea id="description" placeholder="Job Description" class="w-full p-3 border rounded" rows="4" required></textarea>
+          <input type="text" id="category" placeholder="Category (e.g., Photography, Cooking)" class="w-full p-3 border rounded" required />
+          <input type="text" id="budget" placeholder="Budget (UGX)" class="w-full p-3 border rounded" required />
+          <input type="text" id="location" placeholder="Location (or type 'Remote')" class="w-full p-3 border rounded" required />
+          <input type="date" id="deadline" class="w-full p-3 border rounded" required />
+          <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700">Post Job</button>
+        </form>
+      </div>
+      <div class="bg-white p-6 rounded shadow-md">
+        <h3 class="text-xl font-semibold mb-4">Your Posted Jobs</h3>
+        <div id="jobList" class="space-y-4 text-gray-700"></div>
+      </div>
+    </section>
   </main>
 
   <!-- Firebase SDKs -->
@@ -48,7 +68,53 @@
           </div>
         </div>
       `;
+
+      if (data.role === 'client') {
+        document.getElementById('jobSection').classList.remove('hidden');
+        loadJobs(user.uid);
+      }
     });
+
+    const jobForm = document.getElementById('jobForm');
+    if (jobForm) {
+      jobForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const user = auth.currentUser;
+        const job = {
+          title: jobForm.title.value,
+          description: jobForm.description.value,
+          category: jobForm.category.value,
+          budget: jobForm.budget.value,
+          location: jobForm.location.value,
+          deadline: jobForm.deadline.value,
+          postedBy: user.uid,
+          createdAt: new Date().toISOString(),
+          applicants: [],
+          status: 'open'
+        };
+        await db.collection('jobs').add(job);
+        alert('Job posted successfully!');
+        location.reload();
+      });
+    }
+
+    async function loadJobs(userId) {
+      const jobsSnapshot = await db.collection('jobs').where('postedBy', '==', userId).get();
+      const jobList = document.getElementById('jobList');
+      jobList.innerHTML = '';
+      jobsSnapshot.forEach(doc => {
+        const job = doc.data();
+        jobList.innerHTML += `
+          <div class="border rounded p-4 bg-gray-50">
+            <h3 class="text-lg font-semibold text-indigo-600">${job.title}</h3>
+            <p class="text-sm text-gray-600">${job.description}</p>
+            <p class="text-sm text-gray-500 mt-1">Location: ${job.location} | Budget: UGX ${job.budget}</p>
+            <p class="text-sm text-gray-500">Deadline: ${job.deadline}</p>
+            <p class="text-sm text-green-600 mt-2">Applicants: ${job.applicants.length}</p>
+          </div>
+        `;
+      });
+    }
 
     function logout() {
       auth.signOut().then(() => window.location.href = 'login.html');
@@ -57,4 +123,3 @@
 
 </body>
 </html>
-
