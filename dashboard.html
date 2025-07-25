@@ -12,6 +12,18 @@
     <button onclick="logout()" class="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600">Logout</button>
   </header>
 
+
+<div class="relative cursor-pointer" id="notification-icon">
+  🔔
+  <span id="notification-count" class="absolute top-0 right-0 bg-red-600 text-white rounded-full text-xs px-1"></span>
+  <ul id="notification-list" class="hidden absolute bg-white shadow-md rounded w-64 mt-2 right-0 max-h-60 overflow-auto z-50"></ul>
+</div>
+
+
+
+
+  
+
   <main class="p-6">
     <h2 class="text-2xl font-semibold mb-4">Welcome, <span id="userRole"></span></h2>
     <div id="profileSection" class="bg-white p-4 rounded shadow-md mb-8">
@@ -125,6 +137,66 @@
     function logout() {
       auth.signOut().then(() => window.location.href = 'login.html');
     }
+
+// notifications.js
+    import { listenForNotifications } from './notifications.js';
+listenForNotifications();
+
+import { db, auth } from './firebase.js';
+import { onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
+
+const notificationIcon = document.getElementById('notification-icon');
+const notificationCount = document.getElementById('notification-count');
+const notificationList = document.getElementById('notification-list');
+
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow-md z-50 animate-bounce';
+  toast.innerText = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+function listenForNotifications() {
+  auth.onAuthStateChanged((user) => {
+    if (!user) return;
+
+    const notifQuery = query(
+      collection(db, 'notifications'),
+      where('recipientId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    onSnapshot(notifQuery, (snapshot) => {
+      let count = 0;
+      notificationList.innerHTML = '';
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const item = document.createElement('li');
+        item.className = 'border-b px-4 py-2';
+        item.textContent = data.message;
+        notificationList.appendChild(item);
+
+        if (!data.seen) count++;
+      });
+      notificationCount.innerText = count > 0 ? count : '';
+
+      if (count > 0) showToast('You have new notifications!');
+    });
+  });
+}
+
+// Optional toggle dropdown logic
+if (notificationIcon && notificationList) {
+  notificationIcon.addEventListener('click', () => {
+    notificationList.classList.toggle('hidden');
+  });
+}
+
+export { listenForNotifications };
+
+
+    
   </script>
 
 </body>
