@@ -1,1 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard – HARAKA CONNECT</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <header class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold text-indigo-600">HARAKA CONNECT Dashboard</h1>
+    <button onclick="logout()" class="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600">Logout</button>
+  </header>
+
+  <main class="p-6">
+    <h2 class="text-2xl font-semibold mb-4">Welcome, <span id="userRole"></span></h2>
+    <div id="profileSection" class="bg-white p-4 rounded shadow-md">
+      <!-- Profile content will be injected here -->
+      <p class="text-gray-600">Loading your profile...</p>
+    </div>
+  </main>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="firebase.js"></script>
+
+  <script>
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) return window.location.href = 'login.html';
+      const doc = await db.collection('users').doc(user.uid).get();
+      const data = doc.data();
+
+      document.getElementById('userRole').innerText = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+
+      const section = document.getElementById('profileSection');
+      section.innerHTML = `
+        <div class="text-center">
+          <img src="${data.logo || data.profilePic}" class="w-24 h-24 mx-auto rounded-full object-cover border mb-4" alt="Profile">
+          <h3 class="text-xl font-bold">${data.name || data.companyName}</h3>
+          <p class="text-gray-600">${data.region}</p>
+          <p class="text-sm text-gray-500 mt-1">${data.email}</p>
+          <div class="mt-4 text-left">
+            <h4 class="font-semibold mb-2">Details</h4>
+            <p><strong>Phone:</strong> ${data.phone || 'N/A'}</p>
+            <p><strong>About:</strong> ${data.bio || data.hiringPreferences || 'No description added.'}</p>
+          </div>
+        </div>
+      `;
+    });
+
+    function logout() {
+      auth.signOut().then(() => window.location.href = 'login.html');
+    }
+  </script>
+
+</body>
+</html>
 
