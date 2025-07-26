@@ -1,0 +1,15 @@
+{
+  "name": "haraka-connect",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "start": "vercel start"
+  },
+  "dependencies": {
+    "@vercel/blob": "latest"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
