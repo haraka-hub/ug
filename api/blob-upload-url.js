@@ -1,3 +1,4 @@
+// /api/blob-upload-url.js
 import { getSignedBlobUrl } from "@vercel/blob";
 
 export default async function handler(req, res) {
@@ -6,7 +7,7 @@ export default async function handler(req, res) {
   try {
     const { url, blob } = await getSignedBlobUrl({
       access: "public",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      token: process.env.BLOB_READ_WRITE_TOKEN,  // must match env var
       contentType,
       filename,
     });
