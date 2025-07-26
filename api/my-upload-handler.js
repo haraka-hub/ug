@@ -74,3 +74,4 @@ document.getElementById("profileForm").addEventListener("submit", async (e) => {
     alert("Error: " + err.message);
   }
 });
+console.log("Loaded token:", process.env.BLOB_READ_WRITE_TOKEN ? "YES" : "NO");
