@@ -1,121 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Talent Profile Setup – HARAKA CONNECT</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="bg-gray-100 p-6">
 
-  <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-xl">
-    <h2 class="text-2xl font-bold text-center mb-6">Talent Profile Setup</h2>
-
-    <form id="talentProfileForm" class="space-y-4">
-      <div class="flex flex-col items-center">
-      <label class="block text-sm font-medium text-gray-700">Profile Picture</label>
-<input type="file" id="mediaInput" accept="image/*" class="mt-1 mb-2" />
-<button onclick="uploadToVercel()" class="bg-indigo-600 text-white px-3 py-1 rounded">Upload Image</button>
-<p id="uploadStatus" class="text-sm mt-2 text-gray-600"></p>
-
-
-      <input type="text" id="name" placeholder="Full Name" required class="w-full p-2 border rounded">
-      <input type="text" id="skills" placeholder="Skills (e.g. Photographer)" required class="w-full p-2 border rounded">
-      <input type="text" id="location" placeholder="Location" required class="w-full p-2 border rounded">
-      <input type="number" id="rate" placeholder="Rate per hour (UGX)" required class="w-full p-2 border rounded">
-      <input type="email" id="emailContact" placeholder="Contact Email" required class="w-full p-2 border rounded">
-      <input type="tel" id="phone" placeholder="Phone Number" class="w-full p-2 border rounded">
-
-      <div class="space-y-2">
-        <label class="block font-medium">Social Links (optional)</label>
-        <input type="url" id="instagram" placeholder="Instagram URL" class="w-full p-2 border rounded">
-        <input type="url" id="youtube" placeholder="YouTube URL" class="w-full p-2 border rounded">
+  <div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-bold mb-4 text-indigo-600">Talent Profile Setup</h2>
+    
+    <form id="profileForm" class="space-y-4">
+      <div>
+        <label class="block font-medium">Profile Picture</label>
+        <input type="file" id="imageInput" accept="image/*" required />
       </div>
 
-      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Submit Profile</button>
+      <div>
+        <label class="block font-medium">Full Name</label>
+        <input type="text" id="name" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Skills (e.g. Photographer)</label>
+        <input type="text" id="skills" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Location</label>
+        <input type="text" id="location" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Rate per hour (UGX)</label>
+        <input type="number" id="rate" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Contact Email</label>
+        <input type="email" id="email" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Phone Number</label>
+        <input type="text" id="phone" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Social Links (optional)</label>
+        <input type="text" id="social" class="w-full border p-2 rounded" />
+      </div>
+
+      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+        Submit Profile
+      </button>
     </form>
   </div>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
-  <script src="firebase.js"></script>
+  <script type="module">
+    // Firebase Setup
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
 
-  <script>
-    document.getElementById('profilePic').addEventListener('change', function (e) {
-      const file = e.target.files[0];
-      if (file) {
-        const preview = document.getElementById('previewImg');
-        preview.src = URL.createObjectURL(file);
-        preview.classList.remove('hidden');
-      }
-    });
+    const firebaseConfig = {
+      apiKey: "AIzaSyCIwzK5TqsCyDABZ8ufPM5rhW6X1zAqOrs",
+      authDomain: "haraka-connect-co-ug.firebaseapp.com",
+      databaseURL: "https://haraka-connect-co-ug-default-rtdb.firebaseio.com",
+      projectId: "haraka-connect-co-ug",
+      storageBucket: "haraka-connect-co-ug.appspot.com",
+      messagingSenderId: "192137038338",
+      appId: "1:192137038338:web:eedeeea79843a28867351b",
+      measurementId: "G-LZPMG63L5D"
+    };
 
-    document.getElementById('talentProfileForm').addEventListener('submit', async (e) => {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Upload Image to Vercel Blob Store
+    async function uploadImageToVercel(file) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Image upload failed");
+      const data = await res.json();
+      return data.url;
+    }
+
+    // Form Submission Logic
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const user = auth.currentUser;
-      if (!user) return alert('Please log in first.');
 
-      const uid = user.uid;
-      const profilePic = document.getElementById('profilePic').files[0];
-      let profilePicURL = '';
+      const file = document.getElementById("imageInput").files[0];
+      const name = document.getElementById("name").value;
+      const skills = document.getElementById("skills").value;
+      const location = document.getElementById("location").value;
+      const rate = document.getElementById("rate").value;
+      const email = document.getElementById("email").value;
+      const phone = document.getElementById("phone").value;
+      const social = document.getElementById("social").value;
 
       try {
-        if (profilePic) {
-          const ref = storage.ref(`talent_profiles/${uid}`);
-          await ref.put(profilePic);
-          profilePicURL = await ref.getDownloadURL();
-        }
+        const imageUrl = await uploadImageToVercel(file);
 
-        await db.collection('users').doc(uid).update({
-          name: document.getElementById('name').value,
-          skills: document.getElementById('skills').value,
-          location: document.getElementById('location').value,
-          rate: document.getElementById('rate').value,
-          contactEmail: document.getElementById('emailContact').value,
-          phone: document.getElementById('phone').value || null,
-          instagram: document.getElementById('instagram').value || '',
-          youtube: document.getElementById('youtube').value || '',
-          profilePic: profilePicURL,
-          profileComplete: true
+        await addDoc(collection(db, "talents"), {
+          name,
+          skills,
+          location,
+          rate,
+          email,
+          phone,
+          social,
+          image: imageUrl,
+          createdAt: serverTimestamp()
         });
 
-        alert('Profile successfully completed!');
-        window.location.href = 'dashboard.html';
+        alert("Profile submitted successfully!");
+        window.location.href = "/dashboard";
+
       } catch (err) {
-        alert('Error: ' + err.message);
+        console.error(err);
+        alert("Error: " + err.message);
       }
     });
-
-  async function uploadToVercel() {
-    const fileInput = document.getElementById("mediaInput");
-    const file = fileInput.files[0];
-    if (!file) return alert("Select a file first");
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const res = await fetch("https://haraka.blob.vercel-storage.com/upload", {
-      method: "POST",
-      body: formData
-    });
-
-    const result = await res.json();
-    if (result.url) {
-      document.getElementById("uploadStatus").innerText = "Uploaded ✅";
-      console.log("Blob URL:", result.url);
-
-      // OPTIONAL: Save it to Firestore or a global variable
-      // Example: saveProfileImage(result.url);
-
-    } else {
-      alert("Upload failed");
-      console.error(result);
-    }
-  }
-</script>
-
-
+  </script>
 </body>
 </html>
