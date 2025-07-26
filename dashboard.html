@@ -10,24 +10,24 @@
 
   <header class="bg-white shadow p-4 flex justify-between items-center">
     <h1 class="text-xl font-bold text-indigo-600">HARAKA CONNECT Dashboard</h1>
- <button id="logoutBtn" class="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600">Logout</button>
-
+    <button id="logoutBtn" class="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600">Logout</button>
   </header>
 
   <main class="p-6">
     <h2 class="text-2xl font-semibold mb-4">Welcome, <span id="userRole"></span></h2>
+
     <div id="profileSection" class="bg-white p-4 rounded shadow-md mb-8">
       <p class="text-gray-600">Loading your profile...</p>
     </div>
 
-    <!-- Client Job Post Section -->
+    <!-- Job Posting Section (Only visible for Clients) -->
     <section id="jobSection" class="hidden">
       <div class="bg-white p-6 rounded shadow-md mb-8">
         <h3 class="text-xl font-semibold mb-4">Post a New Job</h3>
         <form id="jobForm" class="space-y-4">
           <input type="text" id="title" placeholder="Job Title" class="w-full p-3 border rounded" required />
           <textarea id="description" placeholder="Job Description" class="w-full p-3 border rounded" rows="4" required></textarea>
-          <input type="text" id="category" placeholder="Category" class="w-full p-3 border rounded" required />
+          <input type="text" id="category" placeholder="Category (e.g. Photography)" class="w-full p-3 border rounded" required />
           <input type="text" id="budget" placeholder="Budget (UGX)" class="w-full p-3 border rounded" required />
           <input type="text" id="location" placeholder="Location" class="w-full p-3 border rounded" required />
           <input type="date" id="deadline" class="w-full p-3 border rounded" required />
@@ -43,33 +43,33 @@
   </main>
 
   <!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
-<script src="firebase.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script src="firebase.js"></script>
 
   <script>
     auth.onAuthStateChanged(async (user) => {
       if (!user) return window.location.href = 'login.html';
 
       const doc = await db.collection('users').doc(user.uid).get();
-
       if (!doc.exists) return window.location.href = 'register.html';
 
       const data = doc.data();
 
-      // Redirect if incomplete profile
+      // Redirect to profile setup if info is missing
       if (data.role === 'client' && (!data.companyName || !data.profilePic)) {
         return window.location.href = 'client-profile.html';
       }
-
-      if (data.role === 'talent' && (!data.name || !data.profilePic || !data.skill)) {
+      if (data.role === 'talent' && (!data.name || !data.skill || !data.profilePic)) {
         return window.location.href = 'talent-profile.html';
       }
 
-      // Display dashboard
+      // Show role
       document.getElementById('userRole').innerText = data.role.toUpperCase();
+
+      // Fill profile section
       const section = document.getElementById('profileSection');
       section.innerHTML = `
         <div class="text-center">
@@ -85,25 +85,25 @@
         </div>
       `;
 
-      // Show job section only for clients
+      // Show job posting if client
       if (data.role === 'client') {
         document.getElementById('jobSection').classList.remove('hidden');
         loadJobs(user.uid);
       }
     });
 
+    // Load jobs posted by this user
     async function loadJobs(userId) {
-      const jobsSnapshot = await db.collection('jobs').where('postedBy', '==', userId).get();
+      const snapshot = await db.collection('jobs').where('postedBy', '==', userId).get();
       const jobList = document.getElementById('jobList');
       jobList.innerHTML = '';
-      jobsSnapshot.forEach(doc => {
+      snapshot.forEach(doc => {
         const job = doc.data();
         jobList.innerHTML += `
           <div class="border rounded p-4 bg-gray-50">
             <h3 class="text-lg font-semibold text-indigo-600">${job.title}</h3>
             <p class="text-sm text-gray-600">${job.description}</p>
-            <p class="text-sm text-gray-500 mt-1">Location: ${job.location} | Budget: UGX ${job.budget}</p>
-            <p class="text-sm text-gray-500">Deadline: ${job.deadline}</p>
+            <p class="text-sm text-gray-500">📍 ${job.location} | 💰 UGX ${job.budget} | 📅 ${job.deadline}</p>
             <p class="text-sm text-green-600 mt-2">Applicants: ${job.applicants?.length || 0}</p>
             <button class="mt-2 px-4 py-1 bg-indigo-500 text-white rounded" onclick="openChat('${doc.id}')">Chat</button>
           </div>
@@ -111,19 +111,20 @@
       });
     }
 
+    // Placeholder chat
     function openChat(jobId) {
-      alert(`Opening chat for Job ID: ${jobId}`);
+      alert("Opening chat for Job ID: " + jobId);
     }
-document.getElementById("logoutBtn").addEventListener("click", () => {
-  auth.signOut().then(() => {
-    window.location.href = "login.html";
-  }).catch((error) => {
-    alert("Logout failed");
-    console.error(error);
-  });
-});
 
+    // Logout button
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      auth.signOut().then(() => {
+        window.location.href = "login.html";
+      }).catch((err) => {
+        alert("Logout failed");
+        console.error(err);
+      });
+    });
   </script>
-
 </body>
 </html>
