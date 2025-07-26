@@ -62,9 +62,10 @@
       if (data.role === 'client' && (!data.companyName || !data.profilePic)) {
         return window.location.href = 'client-profile.html';
       }
-      if (data.role === 'talent' && (!data.name || !data.skill || !data.profilePic)) {
-        return window.location.href = 'talent-profile.html';
-      }
+     if (data.role === 'talent' && (!data.name || !data.profilePic || !data.skill)) {
+  return window.location.href = 'talent-profile.html';
+}
+
 
       // Show role
       document.getElementById('userRole').innerText = data.role.toUpperCase();
