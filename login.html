@@ -32,35 +32,61 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="firebase.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider
+  } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js";
 
-  <!-- Login Script -->
-  <script>
-    const loginForm = document.getElementById('loginForm');
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+  const firebaseConfig = {
+    apiKey: "AIzaSyCIwzK5TqsCyDABZ8ufPM5rhW6X1zAqOrs",
+    authDomain: "haraka-connect-co-ug.firebaseapp.com",
+    projectId: "haraka-connect-co-ug",
+    storageBucket: "haraka-connect-co-ug.appspot.com",
+    messagingSenderId: "192137038338",
+    appId: "1:192137038338:web:eedeeea79843a28867351b"
+  };
 
-      try {
-        await auth.signInWithEmailAndPassword(email, password);
-        alert('Login successful!');
-        window.location.href = "dashboard.html";
-      } catch (error) {
-        alert(error.message);
-      }
-    });
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
 
-    const loginWithGoogle = async () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      try {
-        await auth.signInWithPopup(provider);
-        alert('Logged in with Google!');
-        window.location.href = "dashboard.html";
-      } catch (error) {
-        alert(error.message);
-      }
-    };
-  </script>
+  // ✅ Initialize auth and provider
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  // 🔵 Example: Sign in with Google
+  document.getElementById("googleSignInBtn").addEventListener("click", async () => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      console.log("Google user:", user);
+      // Redirect or do something with user
+    } catch (error) {
+      console.error("Google Sign-In Error:", error.message);
+      alert(error.message);
+    }
+  });
+
+  // 🔵 Example: Sign in with Email/Password
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      console.log("Logged in:", user);
+      // Redirect after login
+    } catch (error) {
+      console.error("Login error:", error.message);
+      alert("Login failed: " + error.message);
+    }
+  });
+</script>
 
 </body>
 </html>
