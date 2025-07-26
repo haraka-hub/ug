@@ -79,22 +79,29 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Upload Image to Vercel Blob Store
+    // Upload image to Vercel Blob via signed URL
     async function uploadImageToVercel(file) {
-      const formData = new FormData();
-      formData.append("file", file);
+      const filename = encodeURIComponent(file.name);
+      const contentType = encodeURIComponent(file.type);
 
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+      // 1. Get secure upload URL from your API
+      const res = await fetch(`/api/blob-upload-url?filename=${filename}&contentType=${contentType}`);
+      if (!res.ok) throw new Error("Failed to get upload URL");
+
+      const { url, blob } = await res.json();
+
+      // 2. Upload file to Blob URL
+      const uploadRes = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file
       });
 
-      if (!res.ok) throw new Error("Image upload failed");
-      const data = await res.json();
-      return data.url;
+      if (!uploadRes.ok) throw new Error("Image upload failed");
+      return blob.url; // public image URL
     }
 
-    // Form Submission Logic
+    // Form submission
     document.getElementById("profileForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
