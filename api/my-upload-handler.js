@@ -1,26 +1,25 @@
 import { put } from '@vercel/blob';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { filename, contentType } = req.query;
-
-  if (!filename || !contentType) {
-    return res.status(400).json({ error: 'Missing filename or contentType' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    const { url, blob } = await put(filename, {
+    const { searchParams } = new URL(req.url, http://${req.headers.host});
+    const filename = searchParams.get('filename');
+
+    if (!filename) {
+      return res.status(400).json({ error: 'Filename is required' });
+    }
+
+    const blob = await put(filename, req.body, {
       access: 'public',
-      contentType,
-      token: process.env.haraka_READ_WRITE_TOKEN, // 👈 changed here
     });
 
-    return res.status(200).json({ url, blob });
-  } catch (err) {
-    console.error('Blob upload error:', err.message);
-    return res.status(500).json({ error: 'Failed to get upload URL' });
+    return res.status(200).json(blob);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to upload file' });
   }
 }
