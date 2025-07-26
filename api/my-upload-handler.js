@@ -1,25 +1,26 @@
-import { getSignedBlobUrl } from "@vercel/blob";
+import { put } from '@vercel/blob';
 
 export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   const { filename, contentType } = req.query;
 
-  // Debugging logs
-  console.log("🧪 filename:", filename);
-  console.log("🧪 contentType:", contentType);
-  console.log("🧪 TOKEN loaded:", !!process.env.BLOB_READ_WRITE_TOKEN);
+  if (!filename || !contentType) {
+    return res.status(400).json({ error: 'Missing filename or contentType' });
+  }
 
   try {
-    const { url, blob } = await getSignedBlobUrl({
-      access: "public",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+    const { url, blob } = await put(filename, {
+      access: 'public',
       contentType,
-      filename,
+      token: process.env.haraka_READ_WRITE_TOKEN, // 👈 changed here
     });
 
-    console.log("✅ Blob signed URL created.");
-    res.status(200).json({ url, blob });
+    return res.status(200).json({ url, blob });
   } catch (err) {
-    console.error("❌ Signed URL error:", err);
-    res.status(500).json({ error: "Failed to create signed URL" });
+    console.error('Blob upload error:', err.message);
+    return res.status(500).json({ error: 'Failed to get upload URL' });
   }
 }
