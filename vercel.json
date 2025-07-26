@@ -1,10 +1,16 @@
 {
-  "functions": {
-    "api/*.js": {
-      "runtime": "vercel-nodejs@18.0.0"
-    }
+  "name": "haraka-connect",
+  "version": "1.0.0",
+  "description": "Talent and product platform powered by Firebase and Vercel Blob Storage",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "start": "vercel start"
   },
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/public/$1" }
-  ]
+  "dependencies": {
+    "@vercel/blob": "latest"
+  },
+  "engines": {
+    "node": "18.x"
+  }
 }
