@@ -1,4 +1,3 @@
-// /api/blob-upload-url.js
 import { getSignedBlobUrl } from "@vercel/blob";
 
 export default async function handler(req, res) {
