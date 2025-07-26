@@ -7,7 +7,6 @@
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 min-h-screen">
-
   <header class="bg-white shadow p-4 flex justify-between items-center">
     <h1 class="text-xl font-bold text-indigo-600">HARAKA CONNECT Dashboard</h1>
     <button id="logoutBtn" class="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600">Logout</button>
@@ -20,7 +19,7 @@
       <p class="text-gray-600">Loading your profile...</p>
     </div>
 
-    <!-- Job Posting Section (Only visible for Clients) -->
+    <!-- Client Job Posting -->
     <section id="jobSection" class="hidden">
       <div class="bg-white p-6 rounded shadow-md mb-8">
         <h3 class="text-xl font-semibold mb-4">Post a New Job</h3>
@@ -40,13 +39,20 @@
         <div id="jobList" class="space-y-4 text-gray-700"></div>
       </div>
     </section>
+
+    <!-- Talent Job Feed -->
+    <section id="talentJobFeed" class="hidden">
+      <div class="bg-white p-6 rounded shadow-md">
+        <h3 class="text-xl font-semibold mb-4">Available Jobs</h3>
+        <div id="allJobsList" class="space-y-4 text-gray-700"></div>
+      </div>
+    </section>
   </main>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
   <script src="firebase.js"></script>
 
   <script>
@@ -58,19 +64,15 @@
 
       const data = doc.data();
 
-      // Redirect to profile setup if info is missing
       if (data.role === 'client' && (!data.companyName || !data.profilePic)) {
         return window.location.href = 'client-profile.html';
       }
-     if (data.role === 'talent' && (!data.name || !data.profilePic || !data.skill)) {
-  return window.location.href = 'talent-profile.html';
-}
+      if (data.role === 'talent' && (!data.name || !data.profilePic || !data.skill)) {
+        return window.location.href = 'talent-profile.html';
+      }
 
-
-      // Show role
       document.getElementById('userRole').innerText = data.role.toUpperCase();
 
-      // Fill profile section
       const section = document.getElementById('profileSection');
       section.innerHTML = `
         <div class="text-center">
@@ -86,14 +88,15 @@
         </div>
       `;
 
-      // Show job posting if client
       if (data.role === 'client') {
         document.getElementById('jobSection').classList.remove('hidden');
         loadJobs(user.uid);
       }
+      if (data.role === 'talent') {
+        loadAllJobs(user.uid);
+      }
     });
 
-    // Load jobs posted by this user
     async function loadJobs(userId) {
       const snapshot = await db.collection('jobs').where('postedBy', '==', userId).get();
       const jobList = document.getElementById('jobList');
@@ -112,12 +115,42 @@
       });
     }
 
-    // Placeholder chat
+    async function loadAllJobs(currentUserId) {
+      const jobFeed = document.getElementById('talentJobFeed');
+      const jobList = document.getElementById('allJobsList');
+      jobFeed.classList.remove('hidden');
+      jobList.innerHTML = '';
+
+      const snapshot = await db.collection('jobs').get();
+      snapshot.forEach(doc => {
+        const job = doc.data();
+        const applied = job.applicants?.includes(currentUserId);
+        jobList.innerHTML += `
+          <div class="border rounded p-4 bg-gray-50">
+            <h3 class="text-lg font-semibold text-indigo-600">${job.title}</h3>
+            <p class="text-sm text-gray-600">${job.description}</p>
+            <p class="text-sm text-gray-500">📍 ${job.location} | 💰 UGX ${job.budget} | 📅 ${job.deadline}</p>
+            <button class="mt-2 px-4 py-1 bg-${applied ? 'gray' : 'green'}-500 text-white rounded" onclick="applyJob('${doc.id}', '${currentUserId}')" ${applied ? 'disabled' : ''}>
+              ${applied ? 'Applied' : 'Apply Now'}
+            </button>
+          </div>
+        `;
+      });
+    }
+
+    async function applyJob(jobId, userId) {
+      const jobRef = db.collection('jobs').doc(jobId);
+      await jobRef.update({
+        applicants: firebase.firestore.FieldValue.arrayUnion(userId)
+      });
+      alert("Applied successfully!");
+      loadAllJobs(userId);
+    }
+
     function openChat(jobId) {
       alert("Opening chat for Job ID: " + jobId);
     }
 
-    // Logout button
     document.getElementById("logoutBtn").addEventListener("click", () => {
       auth.signOut().then(() => {
         window.location.href = "login.html";
