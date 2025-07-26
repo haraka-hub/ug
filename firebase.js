@@ -1,6 +1,4 @@
 // firebase.js
-
-// Import Firebase libraries (via CDN in HTML)
 const firebaseConfig = {
   apiKey: "AIzaSyAprsqWKtJvSIWKNhH9Y5fqrsJe7eOKNYQ",
   authDomain: "haraka-connect-co-ug.firebaseapp.com",
@@ -15,8 +13,6 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Export handles
 const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
-
