@@ -1,27 +1,25 @@
-// File: /api/my-upload-handler.js
-import { put } from '@vercel/blob';
+import { getSignedBlobUrl } from "@vercel/blob";
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   const { filename, contentType } = req.query;
 
-  if (!filename || !contentType) {
-    return res.status(400).json({ error: 'Missing filename or contentType' });
-  }
+  // Debugging logs
+  console.log("🧪 filename:", filename);
+  console.log("🧪 contentType:", contentType);
+  console.log("🧪 TOKEN loaded:", !!process.env.BLOB_READ_WRITE_TOKEN);
 
   try {
-    const { url, blob } = await put(filename, {
-      access: 'public',
-      contentType,
+    const { url, blob } = await getSignedBlobUrl({
+      access: "public",
       token: process.env.BLOB_READ_WRITE_TOKEN,
+      contentType,
+      filename,
     });
 
-    return res.status(200).json({ url, blob });
+    console.log("✅ Blob signed URL created.");
+    res.status(200).json({ url, blob });
   } catch (err) {
-    console.error('Failed to get upload URL:', err);
-    return res.status(500).json({ error: 'Failed to get upload URL' });
+    console.error("❌ Signed URL error:", err);
+    res.status(500).json({ error: "Failed to create signed URL" });
   }
 }
