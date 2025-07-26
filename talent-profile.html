@@ -1,1 +1,137 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Talent Profile Setup – HARAKA CONNECT 2.0</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js"></script>
+</head>
+<body class="bg-gray-100 p-6">
+
+  <div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-bold mb-4 text-indigo-600">Talent Profile Setup</h2>
+    
+    <form id="profileForm" class="space-y-4">
+      <div>
+        <label class="block font-medium">Profile Picture</label>
+        <input type="file" id="imageInput" accept="image/*" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Full Name</label>
+        <input type="text" id="name" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Skills (e.g. Photographer)</label>
+        <input type="text" id="skills" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Location</label>
+        <input type="text" id="location" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Rate per hour (UGX)</label>
+        <input type="number" id="rate" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Contact Email</label>
+        <input type="email" id="email" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Phone Number</label>
+        <input type="text" id="phone" class="w-full border p-2 rounded" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Social Links (optional)</label>
+        <input type="text" id="social" class="w-full border p-2 rounded" />
+      </div>
+
+      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+        Submit Profile
+      </button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCIwzK5TqsCyDABZ8ufPM5rhW6X1zAqOrs",
+      authDomain: "haraka-connect-co-ug.firebaseapp.com",
+      databaseURL: "https://haraka-connect-co-ug-default-rtdb.firebaseio.com",
+      projectId: "haraka-connect-co-ug",
+      storageBucket: "haraka-connect-co-ug.appspot.com",
+      messagingSenderId: "192137038338",
+      appId: "1:192137038338:web:eedeeea79843a28867351b",
+      measurementId: "G-LZPMG63L5D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function uploadImageToVercel(file) {
+      const filename = encodeURIComponent(file.name);
+      const contentType = encodeURIComponent(file.type);
+
+      const res = await fetch(/api/my-upload-handler.js?filename=${filename}&contentType=${contentType});
+      if (!res.ok) throw new Error("Failed to get upload URL");
+
+      const { url, blob } = await res.json();
+
+      const uploadRes = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file
+      });
+
+      if (!uploadRes.ok) throw new Error("Image upload failed");
+      return blob.url;
+    }
+
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const file = document.getElementById("imageInput").files[0];
+      const name = document.getElementById("name").value;
+      const skills = document.getElementById("skills").value;
+      const location = document.getElementById("location").value;
+      const rate = document.getElementById("rate").value;
+      const email = document.getElementById("email").value;
+      const phone = document.getElementById("phone").value;
+      const social = document.getElementById("social").value;
+
+      try {
+        const imageUrl = await uploadImageToVercel(file);
+
+        await addDoc(collection(db, "talents"), {
+          name,
+          skills,
+          location,
+          rate,
+          email,
+          phone,
+          social,
+          image: imageUrl,
+          createdAt: serverTimestamp()
+        });
+
+        alert("Profile submitted successfully!");
+        window.location.href = "/dashboard";
+      } catch (err) {
+        console.error(err);
+        alert("Error: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
