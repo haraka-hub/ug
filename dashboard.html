@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard – HARAKA CONNECT</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
@@ -12,39 +13,27 @@
     <button onclick="logout()" class="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600">Logout</button>
   </header>
 
-
-<div class="relative cursor-pointer" id="notification-icon">
-  🔔
-  <span id="notification-count" class="absolute top-0 right-0 bg-red-600 text-white rounded-full text-xs px-1"></span>
-  <ul id="notification-list" class="hidden absolute bg-white shadow-md rounded w-64 mt-2 right-0 max-h-60 overflow-auto z-50"></ul>
-</div>
-
-
-
-
-  
-
   <main class="p-6">
     <h2 class="text-2xl font-semibold mb-4">Welcome, <span id="userRole"></span></h2>
     <div id="profileSection" class="bg-white p-4 rounded shadow-md mb-8">
-      <!-- Profile content will be injected here -->
       <p class="text-gray-600">Loading your profile...</p>
     </div>
 
-    <!-- Job Posting Section for Clients Only -->
+    <!-- Client Job Post Section -->
     <section id="jobSection" class="hidden">
       <div class="bg-white p-6 rounded shadow-md mb-8">
         <h3 class="text-xl font-semibold mb-4">Post a New Job</h3>
         <form id="jobForm" class="space-y-4">
           <input type="text" id="title" placeholder="Job Title" class="w-full p-3 border rounded" required />
           <textarea id="description" placeholder="Job Description" class="w-full p-3 border rounded" rows="4" required></textarea>
-          <input type="text" id="category" placeholder="Category (e.g., Photography, Cooking)" class="w-full p-3 border rounded" required />
+          <input type="text" id="category" placeholder="Category" class="w-full p-3 border rounded" required />
           <input type="text" id="budget" placeholder="Budget (UGX)" class="w-full p-3 border rounded" required />
-          <input type="text" id="location" placeholder="Location (or type 'Remote')" class="w-full p-3 border rounded" required />
+          <input type="text" id="location" placeholder="Location" class="w-full p-3 border rounded" required />
           <input type="date" id="deadline" class="w-full p-3 border rounded" required />
           <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700">Post Job</button>
         </form>
       </div>
+
       <div class="bg-white p-6 rounded shadow-md">
         <h3 class="text-xl font-semibold mb-4">Your Posted Jobs</h3>
         <div id="jobList" class="space-y-4 text-gray-700"></div>
@@ -59,47 +48,26 @@
   <script src="firebase.js"></script>
 
   <script>
-auth.onAuthStateChanged(async (user) => {
-  if (!user) return window.location.href = 'login.html';
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) return window.location.href = 'login.html';
 
-  const doc = await db.collection('users').doc(user.uid).get();
-  const data = doc.data();
+      const doc = await db.collection('users').doc(user.uid).get();
 
-  if (!data || !data.role || !data.name || !data.profilePic) {
-    // Redirect user to their profile setup if essential fields are missing
-    if (data?.role === 'client') {
-      return window.location.href = 'client-profile.html';
-    } else if (data?.role === 'talent') {
-      return window.location.href = 'talent-profile.html';
-    } else {
-      return window.location.href = 'register.html'; // fallback
-    }
-  }
+      if (!doc.exists) return window.location.href = 'register.html';
 
-  // Load the rest of the dashboard if profile is complete
-  document.getElementById('userRole').innerText = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+      const data = doc.data();
 
-  const section = document.getElementById('profileSection');
-  section.innerHTML = `
-    <div class="text-center">
-      <img src="${data.logo || data.profilePic}" class="w-24 h-24 mx-auto rounded-full object-cover border mb-4" alt="Profile">
-      <h3 class="text-xl font-bold">${data.name || data.companyName}</h3>
-      <p class="text-gray-600">${data.region}</p>
-      <p class="text-sm text-gray-500 mt-1">${data.email}</p>
-      <div class="mt-4 text-left">
-        <h4 class="font-semibold mb-2">Details</h4>
-        <p><strong>Phone:</strong> Hidden</p>
-        <p><strong>About:</strong> ${data.bio || data.hiringPreferences || 'No description added.'}</p>
-      </div>
-    </div>
-  `;
+      // Redirect if incomplete profile
+      if (data.role === 'client' && (!data.companyName || !data.profilePic)) {
+        return window.location.href = 'client-profile.html';
+      }
 
-  if (data.role === 'client') {
-    document.getElementById('jobSection').classList.remove('hidden');
-    loadJobs(user.uid);
-  }
-});
+      if (data.role === 'talent' && (!data.name || !data.profilePic || !data.skill)) {
+        return window.location.href = 'talent-profile.html';
+      }
 
+      // Display dashboard
+      document.getElementById('userRole').innerText = data.role.toUpperCase();
       const section = document.getElementById('profileSection');
       section.innerHTML = `
         <div class="text-center">
@@ -115,34 +83,12 @@ auth.onAuthStateChanged(async (user) => {
         </div>
       `;
 
+      // Show job section only for clients
       if (data.role === 'client') {
         document.getElementById('jobSection').classList.remove('hidden');
         loadJobs(user.uid);
       }
     });
-
-    const jobForm = document.getElementById('jobForm');
-    if (jobForm) {
-      jobForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const user = auth.currentUser;
-        const job = {
-          title: jobForm.title.value,
-          description: jobForm.description.value,
-          category: jobForm.category.value,
-          budget: jobForm.budget.value,
-          location: jobForm.location.value,
-          deadline: jobForm.deadline.value,
-          postedBy: user.uid,
-          createdAt: new Date().toISOString(),
-          applicants: [],
-          status: 'open'
-        };
-        await db.collection('jobs').add(job);
-        alert('Job posted successfully!');
-        location.reload();
-      });
-    }
 
     async function loadJobs(userId) {
       const jobsSnapshot = await db.collection('jobs').where('postedBy', '==', userId).get();
@@ -156,7 +102,7 @@ auth.onAuthStateChanged(async (user) => {
             <p class="text-sm text-gray-600">${job.description}</p>
             <p class="text-sm text-gray-500 mt-1">Location: ${job.location} | Budget: UGX ${job.budget}</p>
             <p class="text-sm text-gray-500">Deadline: ${job.deadline}</p>
-            <p class="text-sm text-green-600 mt-2">Applicants: ${job.applicants.length}</p>
+            <p class="text-sm text-green-600 mt-2">Applicants: ${job.applicants?.length || 0}</p>
             <button class="mt-2 px-4 py-1 bg-indigo-500 text-white rounded" onclick="openChat('${doc.id}')">Chat</button>
           </div>
         `;
@@ -164,73 +110,12 @@ auth.onAuthStateChanged(async (user) => {
     }
 
     function openChat(jobId) {
-      alert(`Opening chat for Job ID: ${jobId}. Contact info is protected.`);
-      // Real-time chat window implementation would go here
+      alert(`Opening chat for Job ID: ${jobId}`);
     }
 
     function logout() {
       auth.signOut().then(() => window.location.href = 'login.html');
     }
-
-// notifications.js
-    import { listenForNotifications } from './notifications.js';
-listenForNotifications();
-
-import { db, auth } from './firebase.js';
-import { onSnapshot, collection, query, where, orderBy } from 'firebase/firestore';
-
-const notificationIcon = document.getElementById('notification-icon');
-const notificationCount = document.getElementById('notification-count');
-const notificationList = document.getElementById('notification-list');
-
-function showToast(message) {
-  const toast = document.createElement('div');
-  toast.className = 'fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow-md z-50 animate-bounce';
-  toast.innerText = message;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 4000);
-}
-
-function listenForNotifications() {
-  auth.onAuthStateChanged((user) => {
-    if (!user) return;
-
-    const notifQuery = query(
-      collection(db, 'notifications'),
-      where('recipientId', '==', user.uid),
-      orderBy('createdAt', 'desc')
-    );
-
-    onSnapshot(notifQuery, (snapshot) => {
-      let count = 0;
-      notificationList.innerHTML = '';
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const item = document.createElement('li');
-        item.className = 'border-b px-4 py-2';
-        item.textContent = data.message;
-        notificationList.appendChild(item);
-
-        if (!data.seen) count++;
-      });
-      notificationCount.innerText = count > 0 ? count : '';
-
-      if (count > 0) showToast('You have new notifications!');
-    });
-  });
-}
-
-// Optional toggle dropdown logic
-if (notificationIcon && notificationList) {
-  notificationIcon.addEventListener('click', () => {
-    notificationList.classList.toggle('hidden');
-  });
-}
-
-export { listenForNotifications };
-
-
-    
   </script>
 
 </body>
