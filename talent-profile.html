@@ -5,23 +5,96 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Talent Profile Setup – HARAKA CONNECT 2.0</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js"></script>
-</head>
-<body class="bg-gray-100 p-6">
 
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js";
+    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCIwzK5TqsCyDABZ8ufPM5rhW6X1zAqOrs",
+      authDomain: "haraka-connect-co-ug.firebaseapp.com",
+      databaseURL: "https://haraka-connect-co-ug-default-rtdb.firebaseio.com",
+      projectId: "haraka-connect-co-ug",
+      storageBucket: "haraka-connect-co-ug.appspot.com",
+      messagingSenderId: "192137038338",
+      appId: "1:192137038338:web:eedeeea79843a28867351b",
+      measurementId: "G-LZPMG63L5D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("profileForm");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const file = document.getElementById("imageInput").files[0];
+        const fullName = document.getElementById("fullName").value;
+        const skills = document.getElementById("skills").value;
+        const location = document.getElementById("location").value;
+        const rate = document.getElementById("rate").value;
+        const email = document.getElementById("email").value;
+        const phone = document.getElementById("phone").value;
+        const socialLinks = document.getElementById("socialLinks").value;
+
+        onAuthStateChanged(auth, async (user) => {
+          if (!user) return alert("You must be logged in to submit your profile.");
+
+          try {
+            // Upload image to Firebase Storage
+            const imageRef = ref(storage, `talent_profiles/${user.uid}/${file.name}`);
+            await uploadBytes(imageRef, file);
+            const imageUrl = await getDownloadURL(imageRef);
+
+            // Prepare profile data
+            const profileData = {
+              uid: user.uid,
+              fullName,
+              skills,
+              location,
+              rate,
+              email,
+              phone,
+              socialLinks,
+              imageUrl,
+              createdAt: serverTimestamp(),
+            };
+
+            // Save to Firestore under /talents/{uid}
+            await setDoc(doc(db, "talents", user.uid), profileData);
+
+            alert("Profile submitted successfully!");
+            window.location.href = "/dashboard.html";
+          } catch (err) {
+            console.error(err);
+            alert("Error: " + err.message);
+          }
+        });
+      });
+    });
+  </script>
+</head>
+
+<body class="bg-gray-100 p-6">
   <div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
-    <h2 class="text-xl font-bold mb-4 text-indigo-600">Talent Profile Setup</h2>
-    
+    <h2 class="text-2xl font-bold mb-4 text-indigo-600">Talent Profile Setup</h2>
+
     <form id="profileForm" class="space-y-4">
       <div>
         <label class="block font-medium">Profile Picture</label>
-        <input type="file" id="imageInput" accept="image/*" required />
+        <input type="file" id="imageInput" accept="image/*" required class="w-full border p-2 rounded" />
       </div>
 
       <div>
         <label class="block font-medium">Full Name</label>
-        <input type="text" id="name" class="w-full border p-2 rounded" required />
+        <input type="text" id="fullName" class="w-full border p-2 rounded" required />
       </div>
 
       <div>
@@ -51,88 +124,13 @@
 
       <div>
         <label class="block font-medium">Social Links (optional)</label>
-        <input type="text" id="social" class="w-full border p-2 rounded" />
+        <input type="text" id="socialLinks" class="w-full border p-2 rounded" />
       </div>
 
-      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 w-full">
         Submit Profile
       </button>
     </form>
   </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCIwzK5TqsCyDABZ8ufPM5rhW6X1zAqOrs",
-      authDomain: "haraka-connect-co-ug.firebaseapp.com",
-      databaseURL: "https://haraka-connect-co-ug-default-rtdb.firebaseio.com",
-      projectId: "haraka-connect-co-ug",
-      storageBucket: "haraka-connect-co-ug.appspot.com",
-      messagingSenderId: "192137038338",
-      appId: "1:192137038338:web:eedeeea79843a28867351b",
-      measurementId: "G-LZPMG63L5D"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // Upload to Vercel Blob
-    async function uploadImageToVercel(file) {
-      const filename = encodeURIComponent(file.name);
-      const contentType = encodeURIComponent(file.type);
-
-      const res = await fetch(/api/my-upload-handler.js?filename=${filename}&contentType=${contentType});
-      if (!res.ok) throw new Error("Failed to get upload URL");
-
-      const { url, blob } = await res.json();
-
-      const uploadRes = await fetch(url, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file
-      });
-
-      if (!uploadRes.ok) throw new Error("Image upload failed");
-      return blob.url;
-    }
-
-    // Submit form
-    document.getElementById("profileForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const file = document.getElementById("imageInput").files[0];
-      const name = document.getElementById("name").value;
-      const skills = document.getElementById("skills").value;
-      const location = document.getElementById("location").value;
-      const rate = document.getElementById("rate").value;
-      const email = document.getElementById("email").value;
-      const phone = document.getElementById("phone").value;
-      const social = document.getElementById("social").value;
-
-      try {
-        const imageUrl = await uploadImageToVercel(file);
-
-        await addDoc(collection(db, "talents"), {
-          name,
-          skills,
-          location,
-          rate,
-          email,
-          phone,
-          social,
-          image: imageUrl,
-          createdAt: serverTimestamp()
-        });
-
-        alert("Profile submitted successfully!");
-        window.location.href = "/dashboard";
-      } catch (err) {
-        console.error(err);
-        alert("Error: " + err.message);
-      }
-    });
-  </script>
 </body>
 </html>
