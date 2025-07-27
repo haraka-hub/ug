@@ -51,4 +51,4 @@ document.getElementById("profileForm").addEventListener("submit", async function
     alert("Error: Image upload failed");
   }
 });
-
+profile-upload.js
